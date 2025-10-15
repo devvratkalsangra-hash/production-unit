@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wood-Pressed Oil Production Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* A light grey background */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: box-shadow 0.3s ease-in-out;
+        }
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .filter-btn {
+            @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors;
+        }
+        .filter-btn.active {
+            @apply bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700;
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-900">GURU Oil Production Dashboard</h1>
+            <p class="text-lg text-gray-600 mt-2">Log and monitor daily wood-pressed oil extraction data.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Data Entry Form -->
+            <div class="lg:col-span-1">
+                <div class="card p-6">
+                    <h2 class="text-2xl font-semibold mb-6">Add New Entry</h2>
+                    <form id="production-form" class="space-y-4">
+                        <div>
+                            <label for="date-input" class="block text-sm font-medium text-gray-700">Date</label>
+                            <input type="date" id="date-input" name="date" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div>
+                             <div class="flex justify-between items-center">
+                                <label for="ghani-number" class="block text-sm font-medium text-gray-700">Ghani Number</label>
+                                <button type="button" id="manage-ghanis-btn" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Manage</button>
+                            </div>
+                            <select id="ghani-number" name="ghaniNumber" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <option>Loading ghanis...</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <label for="material-type-select" class="block text-sm font-medium text-gray-700">Raw Material Type</label>
+                                <button type="button" id="manage-materials-btn" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Manage</button>
+                            </div>
+                            <select id="material-type-select" name="materialType" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <option>Loading materials...</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="material-quantity" class="block text-sm font-medium text-gray-700">Raw Material Quantity (g)</label>
+                            <input type="number" step="0.01" min="0" id="material-quantity" name="materialQuantity" value="18000" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label for="container-weight" class="block text-sm font-medium text-gray-700">Empty Container Weight (g)</label>
+                            <input type="number" step="0.01" min="0" id="container-weight" name="containerWeight" placeholder="1200" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        
+                        <div>
+                            <label for="oil-quantity" class="block text-sm font-medium text-gray-700">Oil Quantity Extracted (g) (with container)</label>
+                            <input type="number" step="0.01" min="0" id="oil-quantity" name="oilQuantity" placeholder="4200" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit" id="submit-button" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Save Entry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Production Log & Analytics Column -->
+            <div class="lg:col-span-2">
+                <div class="card">
+                     <div class="p-6">
+                        <h2 class="text-2xl font-semibold mb-4">Production Entries</h2>
+                        
+                        <!-- SUMMARY CARDS -->
+                        <div id="material-summary-cards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                            <!-- Summary cards will be injected here -->
+                        </div>
+
+                        <!-- FILTERS -->
+                        <div class="flex flex-wrap items-center gap-x-6 gap-y-4 py-4 border-y border-gray-200">
+                            <div class="flex items-center gap-2">
+                                <label for="ghani-filter" class="text-sm font-medium text-gray-700">Ghani:</label>
+                                <select id="ghani-filter" name="ghaniFilter" class="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                    <option value="all">All</option>
+                                </select>
+                            </div>
+                             <div class="flex items-center gap-2">
+                                <label for="material-filter" class="text-sm font-medium text-gray-700">Material:</label>
+                                <select id="material-filter" name="materialFilter" class="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                    <option value="all">All</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2" id="filter-controls">
+                                <button class="filter-btn" data-filter="all">All</button>
+                                <button class="filter-btn active" data-filter="thisMonth">This Month</button>
+                                <button class="filter-btn" data-filter="custom" id="custom-range-btn">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    Custom Range
+                                </button>
+                            </div>
+                        </div>
+                         <div id="custom-date-range-picker" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border">
+                            <div class="flex flex-wrap gap-4 items-end">
+                                <div>
+                                    <label for="start-date-filter" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                    <input type="date" id="start-date-filter" class="py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                     <label for="end-date-filter" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                    <input type="date" id="end-date-filter" class="py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <button id="apply-custom-filter-btn" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 border border-transparent rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Apply</button>
+                            </div>
+                         </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ghani Number</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Raw Material</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material Qty (g)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Oil Qty (g) (with container)</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Oil Qty (L)</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="log-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Rows will be dynamically inserted here -->
+                                <tr>
+                                    <td colspan="7" class="px-6 py-10 text-center text-gray-500">
+                                        Loading production data...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-controls" class="p-6 border-t border-gray-200 text-center">
+                        <button id="show-more-btn" class="hidden w-full md:w-auto py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Show More
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VISUAL ANALYTICS -->
+                <div class="card mt-8">
+                     <div class="p-6">
+                        <h2 class="text-2xl font-semibold mb-4">Visual Analytics</h2>
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <div>
+                                <h3 class="text-lg font-medium text-center mb-2">Production by Raw Material</h3>
+                                <div class="w-full h-80 flex items-center justify-center">
+                                    <canvas id="materialPieChart"></canvas>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-medium text-center mb-2">Total Oil (L) by Ghani Number</h3>
+                                 <div class="w-full h-80 flex items-center justify-center">
+                                    <canvas id="ghaniBarChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="xl:col-span-2">
+                                <h3 class="text-lg font-medium text-center mb-2">Production Over Time</h3>
+                                 <div class="w-full h-80 flex items-center justify-center">
+                                    <canvas id="timeLineChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Raw Materials Modal -->
+    <div id="materials-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="flex justify-between items-center mb-4">
+                     <h3 class="text-xl leading-6 font-bold text-gray-900">Manage Raw Materials</h3>
+                     <button id="close-materials-modal-btn" type="button" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                     </button>
+                </div>
+               
+                <div class="mt-4">
+                    <form id="add-material-form" class="flex gap-2">
+                        <input type="text" id="new-material-name" placeholder="Enter new material name" class="flex-grow w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                        <button type="submit" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        </button>
+                    </form>
+                </div>
+
+                <div id="materials-list" class="mt-4 text-left max-h-60 overflow-y-auto pr-2">
+                    <!-- Material items will be inserted here -->
+                </div>
+                 <div class="items-center px-4 py-3 mt-4">
+                    <button id="materials-modal-close-action" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Ghanis Modal -->
+    <div id="ghanis-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="flex justify-between items-center mb-4">
+                     <h3 class="text-xl leading-6 font-bold text-gray-900">Manage Ghani Machines</h3>
+                     <button id="close-ghanis-modal-btn" type="button" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                     </button>
+                </div>
+               
+                <div class="mt-4">
+                    <form id="add-ghani-form" class="flex gap-2">
+                        <input type="text" id="new-ghani-name" placeholder="Enter new ghani name" class="flex-grow w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                        <button type="submit" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        </button>
+                    </form>
+                </div>
+
+                <div id="ghanis-list" class="mt-4 text-left max-h-60 overflow-y-auto pr-2">
+                    <!-- Ghani items will be inserted here -->
+                </div>
+                 <div class="items-center px-4 py-3 mt-4">
+                    <button id="ghanis-modal-close-action" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // Firebase SDK imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, getDocs, writeBatch, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- Firebase Configuration and Initialization ---
+        const userFirebaseConfig = {
+            apiKey: "AIzaSyBT5pgJazjk0QnzrzEqexup8uTvhfiGDMQ",
+            authDomain: "guru-oil-dashboard.firebaseapp.com",
+            projectId: "guru-oil-dashboard",
+            storageBucket: "guru-oil-dashboard.appspot.com",
+            messagingSenderId: "1075481586553",
+            appId: "1:1075481586553:web:7bd848a460056712535da8",
+            measurementId: "G-YNL72RD9XT"
+        };
+        
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-oil-dashboard';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUserId = null;
+        
+        // --- Firestore Collection References ---
+        const logsCollectionPath = `/artifacts/${appId}/public/data/productionLogs`;
+        const materialsCollectionPath = `/artifacts/${appId}/public/data/rawMaterials`;
+        const ghanisCollectionPath = `/artifacts/${appId}/public/data/ghaniMachines`;
+        const logsCollection = collection(db, logsCollectionPath);
+        const materialsCollection = collection(db, materialsCollectionPath);
+        const ghanisCollection = collection(db, ghanisCollectionPath);
+        
+        // --- DOM Element References ---
+        const productionForm = document.getElementById('production-form');
+        const submitButton = document.getElementById('submit-button');
+        const dateInput = document.getElementById('date-input');
+        const ghaniNumberSelect = document.getElementById('ghani-number');
+        const materialTypeSelect = document.getElementById('material-type-select');
+        const logTableBody = document.getElementById('log-table-body');
+        
+        // Modals elements
+        const materialsModal = document.getElementById('materials-modal');
+        const manageMaterialsBtn = document.getElementById('manage-materials-btn');
+        const closeMaterialsModalBtn = document.getElementById('close-materials-modal-btn');
+        const materialsModalCloseAction = document.getElementById('materials-modal-close-action');
+        const addMaterialForm = document.getElementById('add-material-form');
+        const newMaterialInput = document.getElementById('new-material-name');
+        const materialsListDiv = document.getElementById('materials-list');
+
+        const ghanisModal = document.getElementById('ghanis-modal');
+        const manageGhanisBtn = document.getElementById('manage-ghanis-btn');
+        const closeGhanisModalBtn = document.getElementById('close-ghanis-modal-btn');
+        const ghanisModalCloseAction = document.getElementById('ghanis-modal-close-action');
+        const addGhaniForm = document.getElementById('add-ghani-form');
+        const newGhaniInput = document.getElementById('new-ghani-name');
+        const ghanisListDiv = document.getElementById('ghanis-list');
+
+        // Log state & Filter elements
+        let allLogs = [];
+        let allMaterials = [];
+        let allGhanis = [];
+        let filteredLogs = [];
+        let visibleLogCount = 10;
+        const showMoreBtn = document.getElementById('show-more-btn');
+        const filterControls = document.getElementById('filter-controls');
+        const customDateRangePicker = document.getElementById('custom-date-range-picker');
+        const startDateFilter = document.getElementById('start-date-filter');
+        const endDateFilter = document.getElementById('end-date-filter');
+        const applyCustomFilterBtn = document.getElementById('apply-custom-filter-btn');
+        const ghaniFilter = document.getElementById('ghani-filter');
+        const materialFilter = document.getElementById('material-filter');
+        const summaryCardsContainer = document.getElementById('material-summary-cards');
+        
+        // Chart instances
+        let ghaniChart, materialChart, timeChart;
+
+        // Set default date to today
+        dateInput.valueAsDate = new Date();
+        
+        // --- Authentication ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                fetchAndDisplayLogs();
+                setupRawMaterialsListener();
+                setupGhaniMachinesListener();
+            } else {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Authentication failed:", error);
+                    logTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-10 text-center text-red-500">Authentication Failed. Data cannot be loaded.</td></tr>`;
+                }
+            }
+        });
+
+        // --- Form Submission ---
+        productionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitButton.disabled = true;
+            submitButton.textContent = 'Saving...';
+            submitButton.classList.add('bg-indigo-400');
+
+            const formData = new FormData(productionForm);
+            const materialQty = parseFloat(formData.get('materialQuantity'));
+            const oilQty = parseFloat(formData.get('oilQuantity'));
+
+            const logEntry = {
+                ghaniNumber: formData.get('ghaniNumber'),
+                date: formData.get('date'),
+                materialType: formData.get('materialType'),
+                materialQuantity: materialQty,
+                containerWeight: parseFloat(formData.get('containerWeight')),
+                oilQuantity: oilQty,
+                createdAt: serverTimestamp(),
+                userId: currentUserId
+            };
+
+            try {
+                await addDoc(logsCollection, logEntry);
+                productionForm.reset();
+                dateInput.valueAsDate = new Date();
+                document.getElementById('material-quantity').value = "18000";
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Save Entry';
+                submitButton.classList.remove('bg-indigo-400');
+            }
+        });
+
+        // --- Raw Materials Management ---
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        async function seedInitialMaterials() {
+             const q = query(materialsCollection);
+             const snapshot = await getDocs(q);
+             if (snapshot.empty) {
+                const defaultMaterials = [
+                    { name: 'Peanut (मूंगफली)', color: '#ef4444' },
+                    { name: 'Yellow Mustard (पिली सरसों)', color: '#f59e0b' },
+                    { name: 'Black Mustard (काली सरसों)', color: '#374151' },
+                    { name: 'Coconut (नारियल)', color: '#9ca3af' },
+                    { name: 'Sunflower (सूरजमुखी)', color: '#facc15' }
+                ];
+                const batch = writeBatch(db);
+                defaultMaterials.forEach(material => {
+                    const docRef = doc(materialsCollection);
+                    batch.set(docRef, material);
+                });
+                await batch.commit();
+             }
+        }
+
+        function setupRawMaterialsListener() {
+            seedInitialMaterials(); 
+
+            onSnapshot(query(materialsCollection), (snapshot) => {
+                const materials = [];
+                snapshot.forEach(doc => materials.push({ id: doc.id, ...doc.data() }));
+                materials.sort((a, b) => a.name.localeCompare(b.name));
+                allMaterials = materials; 
+
+                // Populate form dropdown
+                materialTypeSelect.innerHTML = '';
+                if (materials.length === 0) {
+                    materialTypeSelect.innerHTML = '<option>Add a material first</option>';
+                } else {
+                    materials.forEach(material => {
+                        const option = document.createElement('option');
+                        option.value = material.name;
+                        option.textContent = material.name;
+                        materialTypeSelect.appendChild(option);
+                    });
+                }
+                
+                // Populate filter dropdown
+                materialFilter.innerHTML = '<option value="all">All</option>';
+                 materials.forEach(material => {
+                    const option = document.createElement('option');
+                    option.value = material.name;
+                    option.textContent = material.name;
+                    materialFilter.appendChild(option);
+                });
+
+                // Populate manage modal list
+                materialsListDiv.innerHTML = '';
+                materials.forEach(material => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex justify-between items-center p-2 border-b';
+                    itemDiv.innerHTML = `
+                        <span class="text-gray-700 flex items-center gap-2">
+                            <span class="w-4 h-4 rounded-full inline-block" style="background-color: ${material.color || '#cccccc'};"></span>
+                            ${material.name}
+                        </span>
+                        <button data-id="${material.id}" class="delete-material-btn text-red-500 hover:text-red-700">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    `;
+                    materialsListDiv.appendChild(itemDiv);
+                });
+                applyFilter();
+            });
+        }
+
+        function toggleMaterialsModal(show) {
+            materialsModal.classList.toggle('hidden', !show);
+        }
+
+        manageMaterialsBtn.addEventListener('click', () => toggleMaterialsModal(true));
+        closeMaterialsModalBtn.addEventListener('click', () => toggleMaterialsModal(false));
+        materialsModalCloseAction.addEventListener('click', () => toggleMaterialsModal(false));
+        materialsModal.addEventListener('click', (e) => {
+            if (e.target === materialsModal) toggleMaterialsModal(false);
+        });
+
+        addMaterialForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const materialName = newMaterialInput.value.trim();
+            if(materialName) {
+                try {
+                    await addDoc(materialsCollection, { 
+                        name: materialName,
+                        color: getRandomColor()
+                    });
+                    newMaterialInput.value = '';
+                } catch (error) {
+                    console.error("Error adding new material: ", error);
+                }
+            }
+        });
+        
+        materialsListDiv.addEventListener('click', async (e) => {
+            const deleteBtn = e.target.closest('.delete-material-btn');
+            if (deleteBtn) {
+                const docId = deleteBtn.dataset.id;
+                try {
+                    await deleteDoc(doc(db, materialsCollectionPath, docId));
+                } catch(error) {
+                    console.error("Error deleting material: ", error);
+                }
+            }
+        });
+        
+        // --- Ghani Machine Management ---
+        async function seedInitialGhanis() {
+            const q = query(ghanisCollection);
+            const snapshot = await getDocs(q);
+            if(snapshot.empty) {
+                const defaultGhanis = [];
+                for(let i = 1; i <= 6; i++) {
+                    defaultGhanis.push({ name: `Ghani Number ${i}`});
+                }
+                const batch = writeBatch(db);
+                defaultGhanis.forEach(ghani => {
+                    const docRef = doc(ghanisCollection);
+                    batch.set(docRef, ghani);
+                });
+                await batch.commit();
+            }
+        }
+
+        function setupGhaniMachinesListener() {
+            seedInitialGhanis();
+            onSnapshot(query(ghanisCollection), (snapshot) => {
+                const ghanis = [];
+                snapshot.forEach(doc => ghanis.push({ id: doc.id, ...doc.data() }));
+                ghanis.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+                allGhanis = ghanis;
+
+                // Populate form dropdown
+                ghaniNumberSelect.innerHTML = '';
+                ghanis.forEach(ghani => {
+                    const option = document.createElement('option');
+                    option.value = ghani.name;
+                    option.textContent = ghani.name;
+                    ghaniNumberSelect.appendChild(option);
+                });
+
+                // Populate filter dropdown
+                ghaniFilter.innerHTML = '<option value="all">All</option>';
+                ghanis.forEach(ghani => {
+                    const option = document.createElement('option');
+                    option.value = ghani.name;
+                    option.textContent = ghani.name;
+                    ghaniFilter.appendChild(option);
+                });
+
+                // Populate manage modal list
+                ghanisListDiv.innerHTML = '';
+                ghanis.forEach(ghani => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex justify-between items-center p-2 border-b';
+                    itemDiv.innerHTML = `
+                        <span class="text-gray-700">${ghani.name}</span>
+                        <button data-id="${ghani.id}" class="delete-ghani-btn text-red-500 hover:text-red-700">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    `;
+                    ghanisListDiv.appendChild(itemDiv);
+                });
+                applyFilter();
+            });
+        }
+        
+        function toggleGhanisModal(show) {
+            ghanisModal.classList.toggle('hidden', !show);
+        }
+
+        manageGhanisBtn.addEventListener('click', () => toggleGhanisModal(true));
+        closeGhanisModalBtn.addEventListener('click', () => toggleGhanisModal(false));
+        ghanisModalCloseAction.addEventListener('click', () => toggleGhanisModal(false));
+        ghanisModal.addEventListener('click', (e) => {
+            if (e.target === ghanisModal) toggleGhanisModal(false);
+        });
+
+        addGhaniForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const ghaniName = newGhaniInput.value.trim();
+            if(ghaniName) {
+                try {
+                    await addDoc(ghanisCollection, { name: ghaniName });
+                    newGhaniInput.value = '';
+                } catch (error) {
+                    console.error("Error adding new ghani: ", error);
+                }
+            }
+        });
+
+        ghanisListDiv.addEventListener('click', async (e) => {
+            const deleteBtn = e.target.closest('.delete-ghani-btn');
+            if (deleteBtn) {
+                const docId = deleteBtn.dataset.id;
+                try {
+                    await deleteDoc(doc(db, ghanisCollectionPath, docId));
+                } catch(error) {
+                    console.error("Error deleting ghani: ", error);
+                }
+            }
+        });
+
+        // --- Production Log & Pagination & Filtering ---
+        logTableBody.addEventListener('click', async (e) => {
+            const deleteBtn = e.target.closest('.delete-log-btn');
+            if (deleteBtn) {
+                const docId = deleteBtn.dataset.id;
+                try {
+                    await deleteDoc(doc(db, logsCollectionPath, docId));
+                } catch(error) {
+                    console.error("Error deleting log entry: ", error);
+                }
+            }
+        });
+
+        showMoreBtn.addEventListener('click', () => {
+            visibleLogCount += 10;
+            renderLogTable();
+        });
+        
+        function applyFilter() {
+            const activeFilterBtn = document.querySelector('#filter-controls .filter-btn.active');
+            const activeFilter = activeFilterBtn ? activeFilterBtn.dataset.filter : 'all';
+            const selectedGhani = ghaniFilter.value;
+            const selectedMaterial = materialFilter.value;
+            
+            let tempLogs = allLogs;
+
+            // Apply Date Filter
+            if (activeFilter !== 'all') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); 
+                let startDate, endDate;
+
+                switch (activeFilter) {
+                    case 'thisMonth':
+                        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                        break;
+                    case 'custom':
+                        startDate = startDateFilter.value ? new Date(startDateFilter.value + 'T00:00:00') : null;
+                        endDate = endDateFilter.value ? new Date(endDateFilter.value + 'T00:00:00') : null;
+                        break;
+                }
+                
+                tempLogs = tempLogs.filter(log => {
+                    const logDate = new Date(log.date + 'T00:00:00');
+                    if (activeFilter === 'custom') {
+                        const startMatch = startDate ? logDate >= startDate : true;
+                        const endMatch = endDate ? logDate <= endDate : true;
+                        return startMatch && endMatch;
+                    }
+                    return logDate >= startDate && logDate <= endDate;
+                });
+            }
+            
+            // Apply Ghani Filter
+            if (selectedGhani !== 'all') {
+                tempLogs = tempLogs.filter(log => log.ghaniNumber === selectedGhani);
+            }
+
+            // Apply Material Filter
+            if (selectedMaterial !== 'all') {
+                tempLogs = tempLogs.filter(log => log.materialType === selectedMaterial);
+            }
+
+            filteredLogs = tempLogs;
+            visibleLogCount = 10;
+            renderLogTable();
+        }
+        
+        ghaniFilter.addEventListener('change', applyFilter);
+        materialFilter.addEventListener('change', applyFilter);
+
+        filterControls.addEventListener('click', (e) => {
+            const targetButton = e.target.closest('.filter-btn');
+            if (targetButton) {
+                filterControls.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                targetButton.classList.add('active');
+
+                const filterType = targetButton.dataset.filter;
+                if (filterType === 'custom') {
+                    customDateRangePicker.classList.remove('hidden');
+                } else {
+                    customDateRangePicker.classList.add('hidden');
+                    startDateFilter.value = '';
+                    endDateFilter.value = '';
+                    applyFilter();
+                }
+            }
+        });
+
+        applyCustomFilterBtn.addEventListener('click', () => {
+             if (startDateFilter.value || endDateFilter.value) {
+                applyFilter();
+             }
+        });
+
+        function renderSummaryCards(logsToSummarize) {
+            summaryCardsContainer.innerHTML = '';
+            if (!allMaterials.length) return;
+
+            allMaterials.forEach(material => {
+                const logsForMaterial = logsToSummarize.filter(log => log.materialType === material.name);
+                
+                const totalLiters = logsForMaterial.reduce((sum, log) => {
+                    const netOilWeight = (log.oilQuantity || 0) - (log.containerWeight || 0);
+                    const liters = netOilWeight / 910;
+                    return sum + liters;
+                }, 0);
+
+                const totalGramsUsed = logsForMaterial.reduce((sum, log) => {
+                    return sum + (log.materialQuantity || 0);
+                }, 0);
+                const totalKgUsed = totalGramsUsed / 1000;
+
+                const cardHTML = `
+                    <div class="p-4 rounded-lg bg-gray-50 border-l-4 text-center flex flex-col justify-center" style="border-left-color: ${material.color || '#cccccc'};">
+                        <p class="text-sm font-medium text-gray-600 truncate">${material.name}</p>
+                        <p class="text-2xl font-bold text-indigo-600">${totalLiters.toFixed(2)} L</p>
+                        <p class="text-xs font-medium text-gray-500 mt-1">from ${totalKgUsed.toFixed(2)} kg</p>
+                    </div>
+                `;
+                summaryCardsContainer.innerHTML += cardHTML;
+            });
+        }
+        
+        function renderCharts(logsForCharts) {
+            if (ghaniChart) ghaniChart.destroy();
+            if (materialChart) materialChart.destroy();
+            if (timeChart) timeChart.destroy();
+            if (!allGhanis.length) return;
+
+            // 1. Ghani Bar Chart
+            const ghaniData = {};
+            allGhanis.forEach(ghani => { ghaniData[ghani.name] = 0; });
+
+            logsForCharts.forEach(log => {
+                const netLiters = ((log.oilQuantity || 0) - (log.containerWeight || 0)) / 910;
+                if (ghaniData[log.ghaniNumber] !== undefined) {
+                    ghaniData[log.ghaniNumber] += netLiters;
+                }
+            });
+
+            const ghaniCtx = document.getElementById('ghaniBarChart').getContext('2d');
+            ghaniChart = new Chart(ghaniCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(ghaniData),
+                    datasets: [{
+                        label: 'Total Liters',
+                        data: Object.values(ghaniData),
+                        backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true } }, responsive: true, maintainAspectRatio: false }
+            });
+
+            // 2. Material Pie Chart
+            const materialData = {};
+            logsForCharts.forEach(log => {
+                const netLiters = ((log.oilQuantity || 0) - (log.containerWeight || 0)) / 910;
+                materialData[log.materialType] = (materialData[log.materialType] || 0) + netLiters;
+            });
+            
+            const materialLabels = Object.keys(materialData);
+            const materialValues = Object.values(materialData);
+            
+            const materialColors = materialLabels.map(label => {
+                const material = allMaterials.find(m => m.name === label);
+                return material ? material.color : '#cccccc';
+            });
+
+            const materialCtx = document.getElementById('materialPieChart').getContext('2d');
+            materialChart = new Chart(materialCtx, {
+                type: 'pie',
+                data: {
+                    labels: materialLabels,
+                    datasets: [{
+                        data: materialValues,
+                        backgroundColor: materialColors,
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 3. Production Over Time Line Chart
+            const timeData = {};
+            logsForCharts.forEach(log => {
+                const netLiters = ((log.oilQuantity || 0) - (log.containerWeight || 0)) / 910;
+                timeData[log.date] = (timeData[log.date] || 0) + netLiters;
+            });
+
+            const sortedDates = Object.keys(timeData).sort((a,b) => new Date(a) - new Date(b));
+            const sortedValues = sortedDates.map(date => timeData[date]);
+
+            const timeCtx = document.getElementById('timeLineChart').getContext('2d');
+            timeChart = new Chart(timeCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'Total Liters Produced',
+                        data: sortedValues,
+                        fill: false,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true } }, responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderLogTable() {
+            renderSummaryCards(filteredLogs);
+            renderCharts(filteredLogs);
+            logTableBody.innerHTML = '';
+            const logsToDisplay = filteredLogs.slice(0, visibleLogCount);
+
+            if (logsToDisplay.length === 0) {
+                logTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-10 text-center text-gray-500">No entries match the current filter.</td></tr>`;
+                showMoreBtn.classList.add('hidden');
+                return;
+            }
+
+            logsToDisplay.forEach(log => {
+                const row = document.createElement('tr');
+                
+                const netOilWeight = (log.oilQuantity || 0) - (log.containerWeight || 0);
+                const oilInLiters = (netOilWeight / 910).toFixed(2);
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${log.ghaniNumber || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.materialType}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">${log.materialQuantity.toFixed(2)} g</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">${log.oilQuantity.toFixed(2)} g</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            ${oilInLiters} L
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button data-id="${log.id}" class="delete-log-btn text-red-600 hover:text-red-800 p-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </td>
+                `;
+                logTableBody.appendChild(row);
+            });
+
+            if (filteredLogs.length > visibleLogCount) {
+                showMoreBtn.classList.remove('hidden');
+            } else {
+                showMoreBtn.classList.add('hidden');
+            }
+        }
+
+        function fetchAndDisplayLogs() {
+            const q = query(logsCollection);
+            
+            onSnapshot(q, (querySnapshot) => {
+                const logs = [];
+                querySnapshot.forEach((doc) => {
+                    logs.push({ id: doc.id, ...doc.data() });
+                });
+                
+                logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                allLogs = logs;
+                applyFilter();
+                
+            }, (error) => {
+                console.error("Error fetching logs: ", error);
+                logTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-10 text-center text-red-500">Error loading data. Check console for details.</td></tr>`;
+            });
+        }
+    </script>
+</body>
+</html>
+
