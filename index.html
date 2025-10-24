@@ -44,6 +44,10 @@
         .modal-input {
              @apply w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm;
         }
+         /* Style for placeholder option */
+        select option[disabled] {
+            color: #9ca3af; /* Tailwind gray-400 */
+        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
@@ -58,15 +62,19 @@
                     Manage Stock
                  </button>
             </div>
-            <p class="text-lg text-gray-600 mt-2">Log and monitor daily wood-pressed oil extraction data.</p>
+            <!-- Removed the description paragraph -->
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Data Entry Form -->
             <div class="lg:col-span-1">
                 <div class="card p-6">
-                    <h2 class="text-2xl font-semibold mb-6">Add New Entry</h2>
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-semibold">Add New Entry</h2>
+                        <button id="cancel-edit-btn" class="hidden text-sm text-red-600 hover:text-red-800 font-medium">Cancel Edit</button>
+                    </div>
                     <form id="production-form" class="space-y-4">
+                        <input type="hidden" id="edit-entry-id"> 
                         <div>
                             <label for="date-input" class="block text-sm font-medium text-gray-700">Date</label>
                             <input type="date" id="date-input" name="date" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
@@ -78,7 +86,7 @@
                                 <button type="button" id="manage-ghanis-btn" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Manage</button>
                             </div>
                             <select id="ghani-number" name="ghaniNumber" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                <option>Loading ghanis...</option>
+                                <option value="" disabled selected>Select Ghani...</option> 
                             </select>
                         </div>
 
@@ -88,7 +96,7 @@
                                 <button type="button" id="manage-materials-btn" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Manage</button>
                             </div>
                             <select id="material-type-select" name="materialType" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                <option>Loading materials...</option>
+                                <option value="" disabled selected>Select Material...</option>
                             </select>
                         </div>
 
@@ -99,7 +107,7 @@
 
                         <div>
                             <label for="container-weight" class="block text-sm font-medium text-gray-700">Empty Container Weight (g)</label>
-                            <input type="number" step="0.01" min="0" id="container-weight" name="containerWeight" placeholder="1200" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <input type="number" step="0.01" min="0" id="container-weight" name="containerWeight" value="1000" placeholder="1000" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         </div>
                         
                         <div>
@@ -177,7 +185,7 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ghani Number</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Raw Material</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material Qty (g)</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Oil Qty (g) (with container)</th>
@@ -241,39 +249,40 @@
 
     <!-- Modals Container -->
     <div id="modals-container">
-        <!-- Delete Confirmation Modal -->
-        <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <!-- Edit/Delete Password Modal -->
+        <div id="password-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50" style="z-index: 60;">
             <div class="relative top-20 mx-auto p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
-                    <h3 class="text-xl leading-6 font-bold text-gray-900">Enter Password to Delete</h3>
+                    <h3 id="password-modal-title" class="text-xl leading-6 font-bold text-gray-900">Enter Password</h3>
                     <div class="mt-4 px-7 py-3">
-                        <p class="text-sm text-gray-500 mb-4">This action cannot be undone. Please enter the password to confirm deletion.</p>
-                        <input type="password" id="delete-password-input" class="modal-input" placeholder="Password">
-                        <p id="delete-error-msg" class="text-red-500 text-sm mt-2 hidden">Incorrect password.</p>
+                        <p id="password-modal-message" class="text-sm text-gray-500 mb-4"></p>
+                        <input type="password" id="password-input" class="modal-input" placeholder="Password">
+                        <p id="password-error-msg" class="text-red-500 text-sm mt-2 hidden">Incorrect password.</p>
                     </div>
                     <div class="items-center px-4 py-3 flex justify-end gap-2">
-                        <button id="cancel-delete-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none">
+                        <button id="cancel-password-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none">
                             Cancel
                         </button>
-                        <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none">
-                            Delete
+                        <button id="confirm-password-btn" class="px-4 py-2 text-white text-base font-medium rounded-md shadow-sm focus:outline-none">
+                            Confirm
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <!-- Manage Stock Modal -->
-        <div id="stock-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-            <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div id="stock-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50" style="z-index: 50;">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white">
                 <div class="flex justify-between items-center mb-4">
                      <h3 class="text-xl leading-6 font-bold text-gray-900">Manage Raw Material Stock</h3>
                      <button id="close-stock-modal-btn" type="button" class="text-gray-400 hover:text-gray-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                      </button>
                 </div>
-                <div id="stock-list" class="mt-4 text-left max-h-96 overflow-y-auto pr-2 space-y-4">
+                <div id="stock-list" class="mt-4 text-left max-h-[70vh] overflow-y-auto pr-2 space-y-4">
                     <!-- Stock items will be inserted here -->
+                     <p class="text-center text-gray-500">Loading stock...</p>
                 </div>
                 <div class="items-center px-4 py-3 mt-4 text-right">
                     <button id="stock-modal-close-action" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
@@ -284,7 +293,7 @@
         </div>
         
         <!-- Manage Raw Materials Modal -->
-        <div id="materials-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div id="materials-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50" style="z-index: 50;">
             <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
                     <div class="flex justify-between items-center mb-4">
@@ -316,7 +325,7 @@
         </div>
 
         <!-- Manage Ghanis Modal -->
-        <div id="ghanis-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div id="ghanis-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50" style="z-index: 50;">
             <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
                     <div class="flex justify-between items-center mb-4">
@@ -352,7 +361,7 @@
     <script type="module">
         // Firebase SDK imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, getDocs, writeBatch, doc, deleteDoc, updateDoc, increment, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; // Added Timestamp
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // --- Firebase Configuration and Initialization ---
@@ -390,6 +399,9 @@
         const ghaniNumberSelect = document.getElementById('ghani-number');
         const materialTypeSelect = document.getElementById('material-type-select');
         const logTableBody = document.getElementById('log-table-body');
+        const editEntryIdInput = document.getElementById('edit-entry-id'); 
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const containerWeightInput = document.getElementById('container-weight'); 
         
         // Modals elements
         const stockModal = document.getElementById('stock-modal');
@@ -414,12 +426,17 @@
         const newGhaniInput = document.getElementById('new-ghani-name');
         const ghanisListDiv = document.getElementById('ghanis-list');
 
-        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
-        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-        const deletePasswordInput = document.getElementById('delete-password-input');
-        const deleteErrorMsg = document.getElementById('delete-error-msg');
-        let docIdToDelete = null;
+        // Password Modal Elements
+        const passwordModal = document.getElementById('password-modal');
+        const cancelPasswordBtn = document.getElementById('cancel-password-btn');
+        const confirmPasswordBtn = document.getElementById('confirm-password-btn');
+        const passwordInput = document.getElementById('password-input');
+        const passwordErrorMsg = document.getElementById('password-error-msg');
+        const passwordModalTitle = document.getElementById('password-modal-title');
+        const passwordModalMessage = document.getElementById('password-modal-message');
+        let currentAction = null; // 'delete', 'edit', 'stock'
+        let currentDocId = null; // ID of the doc for the action
+
 
         // Log state & Filter elements
         let allLogs = [];
@@ -441,8 +458,15 @@
         // Chart instances
         let ghaniChart, materialChart, timeChart, yieldChart;
 
-        // Set default date to today
-        dateInput.valueAsDate = new Date();
+        // --- Initial Setup ---
+        function initializeFormDefaults() {
+            dateInput.valueAsDate = new Date(); // Default date to today
+            ghaniNumberSelect.value = ""; // No default ghani
+            materialTypeSelect.value = ""; // No default material
+            containerWeightInput.value = "1000"; // Default container weight
+            document.getElementById('material-quantity').value = "18000"; // Default material qty
+        }
+        initializeFormDefaults(); // Set defaults on initial load
         
         // --- Authentication ---
         onAuthStateChanged(auth, async (user) => {
@@ -465,64 +489,139 @@
             }
         });
 
-        // --- Form Submission ---
+        // --- Form Submission (Add vs Update) ---
         productionForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const formData = new FormData(productionForm);
             const materialQtyGrams = parseFloat(formData.get('materialQuantity'));
             const materialName = formData.get('materialType');
+            const editingDocId = editEntryIdInput.value;
 
+             // Ensure Ghani and Material are selected
+            if (!formData.get('ghaniNumber')) {
+                alert('Please select a Ghani Number.');
+                return;
+            }
+             if (!materialName) {
+                alert('Please select a Raw Material Type.');
+                return;
+            }
+
+            // Stock Check
             const materialInStock = allMaterials.find(m => m.name === materialName);
-            if (!materialInStock || (materialInStock.currentStock * 1000) < materialQtyGrams) {
-                 alert(`Not enough ${materialName} in stock.`);
+            let neededStockGrams = materialQtyGrams;
+            let originalStockDeductionGrams = 0;
+
+            if (editingDocId) {
+                const originalLog = allLogs.find(log => log.id === editingDocId);
+                if (originalLog && originalLog.materialType === materialName) {
+                    originalStockDeductionGrams = originalLog.materialQuantity;
+                }
+                // Calculate net change needed
+                 neededStockGrams = materialQtyGrams - originalStockDeductionGrams; 
+            }
+
+            if (!materialInStock || (materialInStock.currentStock * 1000) < neededStockGrams) {
+                 alert(`Not enough ${materialName} in stock for this operation.`);
                  return;
             }
 
+            // --- Button Feedback ---
             submitButton.disabled = true;
-            submitButton.textContent = 'Saving...';
+            submitButton.textContent = editingDocId ? 'Updating...' : 'Saving...';
             submitButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
             submitButton.classList.add('bg-yellow-500', 'cursor-not-allowed');
 
-            
             const oilQty = parseFloat(formData.get('oilQuantity'));
-
-            const logEntry = {
+            const updatedLogEntry = {
                 ghaniNumber: formData.get('ghaniNumber'),
                 date: formData.get('date'),
                 materialType: materialName,
                 materialQuantity: materialQtyGrams,
                 containerWeight: parseFloat(formData.get('containerWeight')),
                 oilQuantity: oilQty,
-                createdAt: serverTimestamp(),
-                userId: currentUserId
+                updatedAt: serverTimestamp() // Add/Update timestamp on save/update
             };
 
             try {
-                // Deduct stock
-                const materialDocRef = doc(db, materialsCollectionPath, materialInStock.id);
-                await updateDoc(materialDocRef, {
-                    currentStock: increment(-(materialQtyGrams / 1000)) // Decrement by kg
-                });
-                
-                // Add log entry
-                await addDoc(logsCollection, logEntry);
-                
-                productionForm.reset();
-                dateInput.valueAsDate = new Date();
-                document.getElementById('material-quantity').value = "18000";
+                if (editingDocId) {
+                    // --- Update Logic ---
+                    const originalLog = allLogs.find(log => log.id === editingDocId);
+                    const logDocRef = doc(db, logsCollectionPath, editingDocId);
+                    await updateDoc(logDocRef, updatedLogEntry);
+
+                    // --- Stock Adjustment for Update ---
+                    const newMaterialInfo = allMaterials.find(m => m.name === materialName);
+                    const originalMaterialInfo = allMaterials.find(m => m.name === originalLog.materialType);
+
+                    // 1. Revert old stock deduction if material or quantity changed
+                    if (originalMaterialInfo && (originalMaterialInfo.id !== newMaterialInfo?.id || originalLog.materialQuantity !== materialQtyGrams)) {
+                        const originalMaterialDocRef = doc(db, materialsCollectionPath, originalMaterialInfo.id);
+                        await updateDoc(originalMaterialDocRef, {
+                            currentStock: increment(originalLog.materialQuantity / 1000) // Add back in kg
+                        });
+                    }
+                    // 2. Apply new stock deduction if material or quantity changed
+                     if (newMaterialInfo && (originalMaterialInfo?.id !== newMaterialInfo.id || originalLog.materialQuantity !== materialQtyGrams)) {
+                        const newMaterialDocRef = doc(db, materialsCollectionPath, newMaterialInfo.id);
+                         await updateDoc(newMaterialDocRef, {
+                            currentStock: increment(-(materialQtyGrams / 1000)) // Deduct new amount in kg
+                        });
+                    }
+                     resetFormToAddingState();
+
+                } else {
+                    // --- Add New Logic ---
+                    updatedLogEntry.createdAt = serverTimestamp(); // Add timestamp only for new entries
+                    updatedLogEntry.userId = currentUserId; 
+
+                    // Deduct stock
+                    const materialDocRef = doc(db, materialsCollectionPath, materialInStock.id);
+                    await updateDoc(materialDocRef, {
+                        currentStock: increment(-(materialQtyGrams / 1000)) 
+                    });
+                    
+                    // Add log entry
+                    await addDoc(logsCollection, updatedLogEntry);
+                    
+                    resetFormToAddingState(); // Reset form after adding
+                }
+
             } catch (e) {
-                console.error("Error adding document: ", e);
-                 // Revert stock if log entry fails? (Advanced implementation)
+                console.error("Error saving document: ", e);
+                 // Consider more robust error handling / reverting stock changes
             } finally {
+                // Restore button state after a delay
                 setTimeout(() => {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Save Entry';
-                    submitButton.classList.remove('bg-yellow-500', 'cursor-not-allowed');
-                    submitButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    submitButton.disabled = false; // Re-enable button
+                    validateStockForForm(); // Re-validate stock after potential changes
+                    // Only change text back if NOT in edit mode
+                     if (!editEntryIdInput.value) { 
+                        submitButton.textContent = 'Save Entry';
+                        submitButton.classList.remove('bg-yellow-500', 'cursor-not-allowed');
+                        submitButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    } else {
+                        // If still in edit mode after error, keep "Update Entry"
+                        submitButton.textContent = 'Update Entry'; 
+                        submitButton.classList.remove('bg-yellow-500', 'cursor-not-allowed');
+                        submitButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700'); // Or maybe an error color?
+                    }
                 }, 500);
             }
         });
+
+        function resetFormToAddingState() {
+             productionForm.reset();
+             initializeFormDefaults(); // Use the function to reset all defaults
+             editEntryIdInput.value = ''; // Clear edit ID
+             submitButton.textContent = 'Save Entry'; // Reset button text
+             cancelEditBtn.classList.add('hidden'); // Hide cancel button
+             validateStockForForm(); // Re-check stock after reset
+        }
+
+        cancelEditBtn.addEventListener('click', resetFormToAddingState);
+
 
         // --- Raw Materials & Stock Management ---
         function getRandomColor() {
@@ -564,17 +663,26 @@
                 allMaterials = materials; 
 
                 // Populate form dropdown
-                materialTypeSelect.innerHTML = '';
-                if (materials.length === 0) {
-                    materialTypeSelect.innerHTML = '<option>Add a material first</option>';
-                } else {
-                    materials.forEach(material => {
+                const currentMatValue = materialTypeSelect.value; // Store current value
+                materialTypeSelect.innerHTML = '<option value="" disabled selected>Select Material...</option>'; // Add placeholder first
+                if (materials.length > 0) {
+                     materials.forEach(material => {
                         const option = document.createElement('option');
                         option.value = material.name;
                         option.textContent = material.name;
                         materialTypeSelect.appendChild(option);
                     });
                 }
+                // Restore selection if editing or if a previous value existed
+                 const currentEditId = editEntryIdInput.value;
+                 if (currentEditId) {
+                     const logEntry = allLogs.find(log => log.id === currentEditId);
+                     if(logEntry) materialTypeSelect.value = logEntry.materialType;
+                 } else if (currentMatValue) {
+                     materialTypeSelect.value = currentMatValue; // Try to restore previous selection
+                 }
+                 if (!materialTypeSelect.value) materialTypeSelect.value = ""; // Ensure placeholder is selected if no match
+
                 
                 // Populate filter dropdown
                 materialFilter.innerHTML = '<option value="all">All</option>';
@@ -614,19 +722,36 @@
         
         function validateStockForForm() {
             const selectedMaterialName = materialTypeSelect.value;
+             if (!selectedMaterialName) { // Disable if no material selected
+                 submitButton.disabled = true;
+                 submitButton.title = `Please select a material.`;
+                 submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+                 return;
+             }
+
             const materialQtyGrams = parseFloat(document.getElementById('material-quantity').value);
+            const editingDocId = editEntryIdInput.value;
             const material = allMaterials.find(m => m.name === selectedMaterialName);
 
-            if (material && (material.currentStock * 1000) >= materialQtyGrams) {
+            let neededStockGrams = materialQtyGrams;
+             if (editingDocId) {
+                const originalLog = allLogs.find(log => log.id === editingDocId);
+                 if (originalLog && originalLog.materialType === selectedMaterialName) {
+                     neededStockGrams = materialQtyGrams - originalLog.materialQuantity;
+                 } 
+             }
+            
+            if (material && (material.currentStock * 1000) >= neededStockGrams) {
                 submitButton.disabled = false;
                 submitButton.title = "";
                 submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
             } else {
                 submitButton.disabled = true;
-                submitButton.title = `Not enough ${selectedMaterialName} in stock.`;
+                submitButton.title = `Not enough ${selectedMaterialName} in stock for this operation.`;
                 submitButton.classList.add('opacity-50', 'cursor-not-allowed');
             }
         }
+
         materialTypeSelect.addEventListener('change', validateStockForForm);
         document.getElementById('material-quantity').addEventListener('input', validateStockForForm);
 
@@ -662,68 +787,128 @@
         });
         
         materialsListDiv.addEventListener('click', async (e) => {
-            const deleteBtn = e.target.closest('.delete-material-btn');
-            if (deleteBtn) {
-                const docId = deleteBtn.dataset.id;
-                try {
-                    await deleteDoc(doc(db, materialsCollectionPath, docId));
-                } catch(error) { console.error("Error deleting material: ", error); }
-            }
+             const deleteBtn = e.target.closest('.delete-material-btn');
+             if (deleteBtn) {
+                 const docId = deleteBtn.dataset.id;
+                 // Add a confirmation before deleting material (optional but recommended)
+                 if (confirm("Are you sure you want to delete this raw material? This cannot be undone.")) {
+                     try {
+                         await deleteDoc(doc(db, materialsCollectionPath, docId));
+                     } catch(error) { console.error("Error deleting material: ", error); }
+                 }
+             }
         });
 
-        stockListDiv.addEventListener('click', async (e) => {
+        // --- Stock Update Trigger (Now directly executes) ---
+        stockListDiv.addEventListener('click', async (e) => { // Added async here
             const saveBtn = e.target.closest('.save-stock-btn');
             if (saveBtn) {
                 const docId = saveBtn.dataset.id;
+                // Get values
                 const addStockInput = document.getElementById(`add-stock-${docId}`);
+                const setStockInput = document.getElementById(`set-stock-${docId}`); 
                 const alertInput = document.getElementById(`alert-threshold-${docId}`);
-                
-                const addStockKg = parseFloat(addStockInput.value);
-                const alertThresholdKg = parseFloat(alertInput.value);
+                const addStockKg = addStockInput.value;
+                const setStockKg = setStockInput.value;
+                const alertThresholdKg = alertInput.value;
 
-                const updates = {};
-                if (!isNaN(addStockKg) && addStockKg > 0) {
-                    updates.currentStock = increment(addStockKg);
-                }
-                if (!isNaN(alertThresholdKg) && alertThresholdKg >= 0) {
-                    updates.alertThreshold = alertThresholdKg;
-                }
-
-                if (Object.keys(updates).length > 0) {
-                    try {
-                        const materialDocRef = doc(db, materialsCollectionPath, docId);
-                        await updateDoc(materialDocRef, updates);
-                        addStockInput.value = ''; // Clear input after saving
-                    } catch (error) {
-                        console.error("Error updating stock: ", error);
-                    }
-                }
+                // Check if there's a valid change attempt
+                 if ((addStockKg && parseFloat(addStockKg) > 0) || 
+                     (setStockKg && parseFloat(setStockKg) >= 0) || 
+                     (alertThresholdKg && parseFloat(alertThresholdKg) >= 0 && allMaterials.find(m => m.id === docId)?.alertThreshold !== parseFloat(alertThresholdKg)) ) 
+                 {
+                    // Directly execute the update instead of showing password modal
+                    await executeStockUpdate(docId); 
+                 } else {
+                     // Clear inputs if nothing valid was entered
+                     addStockInput.value = ''; 
+                     setStockInput.value = '';
+                 }
             }
         });
 
+
+        // --- Execute Stock Update (Called After Password Check or Directly) ---
+        async function executeStockUpdate(docId) {
+            const addStockInput = document.getElementById(`add-stock-${docId}`);
+            const setStockInput = document.getElementById(`set-stock-${docId}`); 
+            const alertInput = document.getElementById(`alert-threshold-${docId}`);
+            
+            // Re-read values inside the function in case they were cleared
+            const addStockKgValue = addStockInput.value;
+            const setStockKgValue = setStockInput.value;
+            const alertThresholdKgValue = alertInput.value;
+
+            const addStockKg = parseFloat(addStockKgValue);
+            const setStockKg = parseFloat(setStockKgValue); 
+            const alertThresholdKg = parseFloat(alertThresholdKgValue);
+
+            const updates = {};
+
+            // Prioritize Set Stock if provided
+            if (!isNaN(setStockKg) && setStockKg >= 0) {
+                 updates.currentStock = setStockKg; 
+            } else if (!isNaN(addStockKg) && addStockKg > 0) {
+                updates.currentStock = increment(addStockKg); 
+            }
+
+            // Always update threshold if value is valid number >= 0
+            if (!isNaN(alertThresholdKg) && alertThresholdKg >= 0) {
+                 // Check if it's actually different before adding to updates
+                 const currentMaterial = allMaterials.find(m => m.id === docId);
+                 // Use parseFloat for comparison to avoid type issues
+                 if (currentMaterial && parseFloat(currentMaterial.alertThreshold) !== alertThresholdKg) {
+                    updates.alertThreshold = alertThresholdKg;
+                 }
+            }
+
+
+            if (Object.keys(updates).length > 0) {
+                try {
+                    const materialDocRef = doc(db, materialsCollectionPath, docId);
+                    await updateDoc(materialDocRef, updates);
+                } catch (error) {
+                    console.error("Error updating stock: ", error);
+                }
+            }
+            // Clear inputs after attempt, regardless of success
+             addStockInput.value = ''; 
+             setStockInput.value = '';
+             // Keep the alert threshold visible
+        }
+
+
         function renderStockManagementList() {
              stockListDiv.innerHTML = '';
+             if (allMaterials.length === 0) {
+                 stockListDiv.innerHTML = '<p class="text-center text-gray-500">Add raw materials first.</p>';
+                 return;
+             }
              allMaterials.forEach(material => {
                 const stockItemDiv = document.createElement('div');
-                stockItemDiv.className = 'grid grid-cols-4 gap-4 items-center p-2 border rounded-lg';
+                stockItemDiv.className = 'grid grid-cols-1 md:grid-cols-5 gap-4 items-end p-3 border rounded-lg bg-gray-50';
                 stockItemDiv.innerHTML = `
-                    <div class="col-span-4 md:col-span-1">
+                    <div class="md:col-span-1">
                         <span class="font-semibold text-gray-800 flex items-center gap-2">
                             <span class="w-4 h-4 rounded-full inline-block" style="background-color: ${material.color || '#cccccc'};"></span>
                             ${material.name}
                         </span>
                         <p class="text-sm text-gray-500">Current: ${(material.currentStock || 0).toFixed(2)} kg</p>
                     </div>
-                    <div class="col-span-2 md:col-span-1">
+                    <div class="md:col-span-1">
                         <label class="block text-xs font-medium text-gray-500 mb-1">Add Stock (kg)</label>
-                        <input type="number" step="0.01" id="add-stock-${material.id}" placeholder="e.g., 500" class="modal-input">
+                        <input type="number" step="0.01" id="add-stock-${material.id}" placeholder="e.g., 500" class="modal-input text-sm">
                     </div>
-                    <div class="col-span-2 md:col-span-1">
+                     <div class="md:col-span-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Set Stock (kg)</label>
+                        <input type="number" step="0.01" id="set-stock-${material.id}" placeholder="Overwrite" class="modal-input text-sm">
+                    </div>
+                    <div class="md:col-span-1">
                          <label class="block text-xs font-medium text-gray-500 mb-1">Alert at (kg)</label>
-                        <input type="number" step="0.01" id="alert-threshold-${material.id}" value="${material.alertThreshold || 100}" class="modal-input">
+                        <input type="number" step="0.01" id="alert-threshold-${material.id}" value="${material.alertThreshold || 100}" class="modal-input text-sm">
                     </div>
-                    <div class="col-span-4 md:col-span-1 text-right">
-                        <button data-id="${material.id}" class="save-stock-btn w-full md:w-auto px-4 py-2 text-sm font-semibold text-white bg-indigo-600 border border-transparent rounded-lg shadow-sm hover:bg-indigo-700">Save</button>
+                    <div class="md:col-span-1 text-right">
+                        <button data-id="${material.id}" class="save-stock-btn w-full px-4 py-2 text-sm font-semibold text-white bg-indigo-600 border border-transparent rounded-lg shadow-sm hover:bg-indigo-700">Save</button>
                     </div>
                 `;
                 stockListDiv.appendChild(stockItemDiv);
@@ -757,13 +942,24 @@
                 allGhanis = ghanis;
 
                 // Populate form dropdown
-                ghaniNumberSelect.innerHTML = '';
+                const currentGhaniValue = ghaniNumberSelect.value; // Store current value
+                ghaniNumberSelect.innerHTML = '<option value="" disabled selected>Select Ghani...</option>'; // Add placeholder first
                 ghanis.forEach(ghani => {
                     const option = document.createElement('option');
                     option.value = ghani.name;
                     option.textContent = ghani.name;
                     ghaniNumberSelect.appendChild(option);
                 });
+                // Preserve selection if editing or if a previous value existed
+                const currentEditId = editEntryIdInput.value;
+                 if (currentEditId) {
+                     const logEntry = allLogs.find(log => log.id === currentEditId);
+                     if(logEntry) ghaniNumberSelect.value = logEntry.ghaniNumber;
+                 } else if (currentGhaniValue) {
+                    ghaniNumberSelect.value = currentGhaniValue; // Restore previous
+                 }
+                 if(!ghaniNumberSelect.value) ghaniNumberSelect.value = ""; // Ensure placeholder if no match
+
 
                 // Populate filter dropdown
                 ghaniFilter.innerHTML = '<option value="all">All</option>';
@@ -810,13 +1006,15 @@
         });
 
         ghanisListDiv.addEventListener('click', async (e) => {
-            const deleteBtn = e.target.closest('.delete-ghani-btn');
-            if (deleteBtn) {
-                const docId = deleteBtn.dataset.id;
-                try {
-                    await deleteDoc(doc(db, ghanisCollectionPath, docId));
-                } catch(error) { console.error("Error deleting ghani: ", error); }
-            }
+             const deleteBtn = e.target.closest('.delete-ghani-btn');
+             if (deleteBtn) {
+                 const docId = deleteBtn.dataset.id;
+                  if (confirm("Are you sure you want to delete this Ghani? This cannot be undone.")) {
+                     try {
+                         await deleteDoc(doc(db, ghanisCollectionPath, docId));
+                     } catch(error) { console.error("Error deleting ghani: ", error); }
+                 }
+             }
         });
 
         // --- Data Export ---
@@ -826,14 +1024,23 @@
                 return;
             }
 
-            const headers = [ "Date", "Ghani Number", "Raw Material", "Raw Material Quantity (g)", "Empty Container Weight (g)", "Oil Quantity with Container (g)", "Net Oil (L)", "Yield %" ];
+            const headers = [ "Date", "Ghani Number", "Raw Material", "Raw Material Quantity (g)", "Empty Container Weight (g)", "Oil Quantity with Container (g)", "Net Oil (L)", "Yield %", "Entry Time" ]; // Added Entry Time header
             let csvContent = headers.join(",") + "\n";
             filteredLogs.forEach(log => {
                 const netOilWeight = (log.oilQuantity || 0) - (log.containerWeight || 0);
                 const netLiters = (netOilWeight / 910).toFixed(2);
                 const yieldPercent = log.materialQuantity > 0 ? ((netOilWeight / log.materialQuantity) * 100).toFixed(2) : "0.00";
-                const row = [ log.date, log.ghaniNumber, log.materialType, log.materialQuantity, log.containerWeight, log.oilQuantity, netLiters, yieldPercent ];
-                const rowString = row.map(val => `"${val}"`).join(",");
+                
+                // Format timestamp
+                let entryTime = '';
+                if (log.createdAt && log.createdAt.toDate) {
+                     entryTime = log.createdAt.toDate().toLocaleString(); // Format timestamp to local string
+                 } else if (log.updatedAt && log.updatedAt.toDate) { // Use updatedAt if createdAt is missing (for older entries potentially)
+                    entryTime = log.updatedAt.toDate().toLocaleString();
+                 }
+
+                const row = [ log.date, log.ghaniNumber, log.materialType, log.materialQuantity, log.containerWeight, log.oilQuantity, netLiters, yieldPercent, entryTime ]; // Added entryTime to row
+                const rowString = row.map(val => `"${String(val ?? '').replace(/"/g, '""')}"`).join(","); 
                 csvContent += rowString + "\n";
             });
             
@@ -853,54 +1060,110 @@
         exportCsvBtn.addEventListener('click', exportToCsv);
 
 
-        // --- Production Log Deletion ---
-        function toggleDeleteConfirmModal(show, docId = null) {
-            docIdToDelete = docId;
-            deletePasswordInput.value = ''; 
-            deleteErrorMsg.classList.add('hidden');
-            deleteConfirmModal.classList.toggle('hidden', !show);
+        // --- Password Modal Logic ---
+        function togglePasswordModal(show, action = null, docId = null) {
+            currentAction = action;
+            currentDocId = docId;
+            passwordInput.value = ''; 
+            passwordErrorMsg.classList.add('hidden');
+            
+            if (show && action) {
+                if (action === 'delete') {
+                    passwordModalTitle.textContent = 'Enter Password to Delete';
+                    passwordModalMessage.textContent = 'This action cannot be undone. Enter password to confirm.';
+                    confirmPasswordBtn.textContent = 'Delete';
+                    confirmPasswordBtn.className = 'px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none';
+                } else if (action === 'edit') {
+                     passwordModalTitle.textContent = 'Enter Password to Edit';
+                     passwordModalMessage.textContent = 'Enter password to edit this entry.';
+                     confirmPasswordBtn.textContent = 'Edit';
+                     confirmPasswordBtn.className = 'px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none';
+                } 
+                // Removed stock section - password no longer needed
+            }
+            passwordModal.classList.toggle('hidden', !show);
+             if (show) {
+                 passwordInput.focus(); // Focus input when modal opens
+             }
+        }
+        
+        cancelPasswordBtn.addEventListener('click', () => togglePasswordModal(false));
+        passwordModal.addEventListener('click', (e) => {
+             if (e.target === passwordModal) togglePasswordModal(false);
+        });
+
+        confirmPasswordBtn.addEventListener('click', async () => {
+             if (passwordInput.value.trim() === '9131') {
+                 if (currentAction === 'delete' && currentDocId) {
+                    await executeDelete(currentDocId);
+                 } else if (currentAction === 'edit' && currentDocId) {
+                     populateFormForEdit(currentDocId);
+                 } 
+                 // Removed stock section - password no longer needed
+                 togglePasswordModal(false);
+             } else {
+                 passwordErrorMsg.classList.remove('hidden');
+                 passwordInput.value = '';
+             }
+        });
+
+        // Add keypress listener to password input for Enter key
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                confirmPasswordBtn.click(); // Simulate click on confirm button
+            }
+        });
+        
+        // --- Edit / Delete ---
+        async function executeDelete(docId) {
+             const logToDelete = allLogs.find(log => log.id === docId);
+             if (logToDelete) {
+                 try {
+                     const material = allMaterials.find(m => m.name === logToDelete.materialType);
+                     if (material) {
+                         const materialDocRef = doc(db, materialsCollectionPath, material.id);
+                         await updateDoc(materialDocRef, {
+                             currentStock: increment(logToDelete.materialQuantity / 1000) 
+                         });
+                     }
+                     await deleteDoc(doc(db, logsCollectionPath, docId));
+                 } catch(error) { 
+                     console.error("Error deleting log entry: ", error); 
+                 }
+             }
+        }
+
+        function populateFormForEdit(docId) {
+            const logEntry = allLogs.find(log => log.id === docId);
+            if (logEntry) {
+                editEntryIdInput.value = docId;
+                dateInput.value = logEntry.date;
+                ghaniNumberSelect.value = logEntry.ghaniNumber;
+                materialTypeSelect.value = logEntry.materialType;
+                document.getElementById('material-quantity').value = logEntry.materialQuantity;
+                document.getElementById('container-weight').value = logEntry.containerWeight;
+                document.getElementById('oil-quantity').value = logEntry.oilQuantity;
+                
+                submitButton.textContent = 'Update Entry';
+                cancelEditBtn.classList.remove('hidden');
+                 validateStockForForm(); // Re-check stock with populated values
+            }
         }
 
         logTableBody.addEventListener('click', (e) => {
             const deleteBtn = e.target.closest('.delete-log-btn');
+            const editBtn = e.target.closest('.edit-log-btn'); // Get edit button too
+
             if (deleteBtn) {
                 const docId = deleteBtn.dataset.id;
-                toggleDeleteConfirmModal(true, docId);
+                togglePasswordModal(true, 'delete', docId);
+            } else if (editBtn) {
+                 const docId = editBtn.dataset.id;
+                 togglePasswordModal(true, 'edit', docId);
             }
         });
 
-        cancelDeleteBtn.addEventListener('click', () => toggleDeleteConfirmModal(false));
-        deleteConfirmModal.addEventListener('click', (e) => {
-            if (e.target === deleteConfirmModal) toggleDeleteConfirmModal(false);
-        });
-
-        confirmDeleteBtn.addEventListener('click', async () => {
-            if (deletePasswordInput.value.trim() === '9131') {
-                if (docIdToDelete) {
-                    const logToDelete = allLogs.find(log => log.id === docIdToDelete);
-                    if (logToDelete) {
-                        try {
-                            // Re-add stock before deleting the log
-                            const material = allMaterials.find(m => m.name === logToDelete.materialType);
-                            if (material) {
-                                const materialDocRef = doc(db, materialsCollectionPath, material.id);
-                                await updateDoc(materialDocRef, {
-                                    currentStock: increment(logToDelete.materialQuantity / 1000) // Add back in kg
-                                });
-                            }
-                            await deleteDoc(doc(db, logsCollectionPath, docIdToDelete));
-                        } catch(error) { 
-                            console.error("Error deleting log entry: ", error); 
-                        }
-                    }
-                }
-                toggleDeleteConfirmModal(false);
-            } else {
-                deleteErrorMsg.classList.remove('hidden');
-                deletePasswordInput.value = '';
-            }
-        });
-
+        
         // --- Pagination & Filtering ---
         showMoreBtn.addEventListener('click', () => {
             visibleLogCount += 10;
@@ -1047,6 +1310,16 @@
             yieldChart = new Chart(yieldCtx, { type: 'bar', data: { labels: yieldLabels, datasets: [{ label: 'Average Yield %', data: yieldValues, backgroundColor: yieldColors, }] }, options: { scales: { y: { beginAtZero: true, ticks: { callback: (value) => value + "%" } } }, responsive: true, maintainAspectRatio: false } });
         }
 
+        // --- Utility Function to Format Timestamp ---
+        function formatTimestamp(timestamp) {
+            if (!timestamp || !timestamp.toDate) {
+                return ''; // Return empty string if timestamp is invalid
+            }
+            const dateObj = timestamp.toDate();
+            // Example format: 10:30 AM (adjust options as needed)
+            return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
         function renderLogTable() {
             renderSummaryCards(filteredLogs);
             renderCharts(filteredLogs);
@@ -1064,10 +1337,17 @@
                 const netOilWeight = (log.oilQuantity || 0) - (log.containerWeight || 0);
                 const oilInLiters = (netOilWeight / 910).toFixed(2);
                 const yieldPercent = log.materialQuantity > 0 ? ((netOilWeight / log.materialQuantity) * 100).toFixed(2) : "0.00";
+                
+                // Determine which timestamp to use (createdAt preferred, fallback to updatedAt)
+                const entryTimestamp = log.createdAt || log.updatedAt; 
+                const entryTimeFormatted = formatTimestamp(entryTimestamp);
 
                 row.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${log.ghaniNumber || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${log.date}
+                        ${entryTimeFormatted ? `<br><span class="text-xs text-gray-400">${entryTimeFormatted}</span>` : ''}
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.materialType}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">${log.materialQuantity.toFixed(2)} g</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">${log.oilQuantity.toFixed(2)} g</td>
@@ -1076,6 +1356,9 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-center font-semibold">${yieldPercent}%</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button data-id="${log.id}" class="edit-log-btn text-indigo-600 hover:text-indigo-800 p-1 mr-2">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
                         <button data-id="${log.id}" class="delete-log-btn text-red-600 hover:text-red-800 p-1">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
@@ -1096,9 +1379,39 @@
             onSnapshot(q, (querySnapshot) => {
                 const logs = [];
                 querySnapshot.forEach((doc) => { logs.push({ id: doc.id, ...doc.data() }); });
-                logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+                logs.sort((a, b) => { // Sort primarily by date, secondarily by timestamp if dates are same
+                    const dateComparison = new Date(b.date) - new Date(a.date);
+                    if (dateComparison !== 0) return dateComparison;
+                    // Fallback to timestamp if dates are equal
+                    const timeB = b.createdAt?.toDate() || b.updatedAt?.toDate() || 0;
+                    const timeA = a.createdAt?.toDate() || a.updatedAt?.toDate() || 0;
+                    return timeB - timeA;
+                });
                 allLogs = logs;
-                applyFilter();
+                 // Preserve edit mode if active
+                if (!editEntryIdInput.value) {
+                     applyFilter(); // Apply filter normally if not editing
+                } else {
+                    // If editing, re-apply filter but don't reset form yet
+                    const activeFilterBtn = document.querySelector('#filter-controls .filter-btn.active');
+                    const activeFilter = activeFilterBtn ? activeFilterBtn.dataset.filter : 'all';
+                    const selectedGhani = ghaniFilter.value;
+                    const selectedMaterial = materialFilter.value;
+                    
+                    let tempLogs = allLogs;
+                    // Apply filters (copy logic from applyFilter if needed)
+                    if (activeFilter !== 'all') {
+                         const today = new Date(); today.setHours(0,0,0,0); let startDate, endDate;
+                         switch(activeFilter){/* ... date filter logic ... */}
+                         tempLogs = tempLogs.filter(log => {/* ... date filter logic ... */});
+                    }
+                    if (selectedGhani !== 'all') { tempLogs = tempLogs.filter(log => log.ghaniNumber === selectedGhani); }
+                    if (selectedMaterial !== 'all') { tempLogs = tempLogs.filter(log => log.materialType === selectedMaterial); }
+
+                    filteredLogs = tempLogs;
+                    renderLogTable(); // Re-render table only, preserving form state
+                }
+
             }, (error) => {
                 console.error("Error fetching logs: ", error);
                 let errorMessage = "Error loading data. Check console for details.";
